@@ -1,0 +1,1 @@
+from opa import get_principal_attributes

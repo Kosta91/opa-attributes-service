@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 
+from app.api import public_router
 from app.cache import RedisAttributeStore, LocalAttributeStore
 from app.external import EntraIDAttributeSource
 from app.redis import get_redis, get_redis_pool
@@ -21,6 +22,7 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(public_router)
 
 
 @app.get("/health", tags=["health"])
