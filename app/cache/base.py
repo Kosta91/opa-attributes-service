@@ -19,6 +19,10 @@ class InMemoryAttributeStore(ABC):
     async def set(self, key: str, value: Any) -> None:
         """Store a value."""
 
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        """Remove a value by key."""
+
 
 def get_store(request: Request) -> InMemoryAttributeStore:
     """FastAPI dependency — returns the store created during lifespan."""

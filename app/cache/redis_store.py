@@ -25,3 +25,6 @@ class RedisAttributeStore(InMemoryAttributeStore):
 
     async def set(self, key: str, value: Any) -> None:
         await self._redis.set(key, json.dumps(value), ex=redis_settings.REDIS_CACHE_TTL)
+
+    async def delete(self, key: str) -> None:
+        await self._redis.delete(key)

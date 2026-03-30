@@ -20,3 +20,6 @@ class LocalAttributeStore(InMemoryAttributeStore):
 
     async def set(self, key: str, value: Any) -> None:
         self._data[key] = value
+
+    async def delete(self, key: str) -> None:
+        self._data.pop(key, None)

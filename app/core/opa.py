@@ -10,6 +10,7 @@ from app.db import DbSession
 from app.exceptions import PrincipalNotFoundError
 from app.external.base import ExternalAttributeSource
 from app.models import PrincipalAttribute
+from app.redis.keys import principal_attrs_key
 from app.schemas import PrincipalAttributesResponse
 
 from typing import Dict, List
@@ -25,7 +26,7 @@ async def get_principal_attributes(
     principal_id: str,
 ) -> PrincipalAttributesResponse:
     """Return aggregated attributes for one principal (email or other id)."""
-    cache_key = f"principal_attrs:{principal_id}"
+    cache_key = principal_attrs_key(principal_id)
 
     # 1. In-memory cache
     try:

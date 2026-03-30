@@ -13,6 +13,7 @@ from app.external import EntraIDAttributeSource
 from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
 from app.redis.redis_settings import redis_settings
+from app.sync import SyncWorker
 
 import uvicorn
 
@@ -25,7 +26,16 @@ async def lifespan(application: FastAPI):
     else:
         application.state.store = LocalAttributeStore()
     application.state.external_source = EntraIDAttributeSource()
+
+    sync_worker = SyncWorker(
+        store=application.state.store,
+        external=application.state.external_source,
+    )
+    sync_worker.start()
+
     yield
+
+    await sync_worker.stop()
 
 
 app = FastAPI(lifespan=lifespan)
