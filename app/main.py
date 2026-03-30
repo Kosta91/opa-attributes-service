@@ -2,8 +2,11 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from typing import Dict, Optional
 
+from sqlalchemy import text
+
 from app.api import public_router, register_exception_handlers
 from app.cache import RedisAttributeStore, LocalAttributeStore
+from app.db import DbSession, get_db
 from app.external import EntraIDAttributeSource
 from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
@@ -25,6 +28,31 @@ async def lifespan(application: FastAPI):
 app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(public_router)
+
+
+@app.get("/ready", tags=["health"])
+async def readiness(
+    db: DbSession = Depends(get_db),
+    redis: Optional[Redis] = Depends(get_redis),
+) -> Dict[str, str]:
+    """Readiness probe — checks that all dependencies are reachable."""
+    checks: Dict[str, str] = {}
+
+    try:
+        await db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "unavailable"
+
+    if redis is not None:
+        try:
+            await redis.ping()
+            checks["redis"] = "ok"
+        except Exception:
+            checks["redis"] = "unavailable"
+
+    status = "ok" if all(v == "ok" for v in checks.values()) else "unavailable"
+    return {"status": status, **checks}
 
 
 @app.get("/health", tags=["health"])
