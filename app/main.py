@@ -2,7 +2,8 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 
 from app.cache import RedisAttributeStore, LocalAttributeStore
-from app.redis import get_redis
+from app.external import EntraIDAttributeSource
+from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
 from app.redis.redis_settings import redis_settings
 
@@ -12,10 +13,10 @@ import uvicorn
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     if redis_settings.REDIS_ENABLED:
-        from app.redis.redis import get_redis_pool
         application.state.store = RedisAttributeStore(get_redis_pool())
     else:
         application.state.store = LocalAttributeStore()
+    application.state.external_source = EntraIDAttributeSource()
     yield
 
 
