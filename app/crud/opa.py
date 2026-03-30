@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.db import DbSession
+from app.exceptions import AttributeConflictError, DatabaseReadError, DatabaseWriteError
 from app.models import PrincipalAttribute
 
 logger = logging.getLogger(__name__)
@@ -19,9 +20,9 @@ async def get_principal_attributes_from_db(db: DbSession, principal_id: str) -> 
             select(PrincipalAttribute).where(PrincipalAttribute.principal_id == principal_id)
         )
         return list(result.scalars().all())
-    except SQLAlchemyError:
+    except SQLAlchemyError as exc:
         logger.exception("Failed to fetch attributes for principal_id=%s", principal_id)
-        raise
+        raise DatabaseReadError(f"Failed to fetch attributes for principal: {principal_id}") from exc
 
 
 async def add_principal_attributes_to_db(
@@ -44,16 +45,13 @@ async def add_principal_attributes_to_db(
         db.add_all(records)
         await db.flush()
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
-        logger.exception(
-            "Integrity error saving attributes for principal_id=%s — records may already exist",
-            principal_id,
-        )
-        raise
-    except SQLAlchemyError:
+        logger.exception("Integrity error saving attributes for principal_id=%s", principal_id)
+        raise AttributeConflictError(principal_id) from exc
+    except SQLAlchemyError as exc:
         await db.rollback()
         logger.exception("Failed to save attributes for principal_id=%s", principal_id)
-        raise
+        raise DatabaseWriteError(f"Failed to save attributes for principal: {principal_id}") from exc
 
     return records

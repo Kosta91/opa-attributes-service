@@ -1,1 +1,1 @@
-from base import Base, get_db
+from base import Base, DbSession, get_db

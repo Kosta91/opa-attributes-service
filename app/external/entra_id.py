@@ -5,12 +5,14 @@ import logging
 import httpx
 import msal
 
+from app.exceptions import ExternalSourceAuthError, ExternalSourceRequestError, ExternalSourceResponseError
 from app.external.base import ExternalAttributeSource
 from app.external.settings import entra_id_settings
 
 logger = logging.getLogger(__name__)
 
 GRAPH_USER_URL = "https://graph.microsoft.com/v1.0/users/{principal_id}"
+SOURCE_NAME = "entra_id"
 
 
 class EntraIDAttributeSource(ExternalAttributeSource):
@@ -30,18 +32,13 @@ class EntraIDAttributeSource(ExternalAttributeSource):
         )
         if "access_token" not in result:
             error = result.get("error_description", "unknown error")
-            raise RuntimeError(f"Failed to acquire Entra ID token: {error}")
+            raise ExternalSourceAuthError(SOURCE_NAME, error)
         return result["access_token"]
 
 
     async def fetch_attributes(self, principal_id: str) -> dict[str, str] | None:
         """Fetch user attributes from Microsoft Graph API."""
-        try:
-            token = self._acquire_token()
-        except RuntimeError:
-            logger.exception("Entra ID token acquisition failed for principal_id=%s", principal_id)
-            # TODO: raise custom service error instead
-            return None
+        token = self._acquire_token()
 
         url = GRAPH_USER_URL.format(principal_id=principal_id)
         try:
@@ -50,21 +47,14 @@ class EntraIDAttributeSource(ExternalAttributeSource):
                     url,
                     headers={"Authorization": f"Bearer {token}"},
                 )
-        except httpx.HTTPError:
-            logger.exception("Graph API request failed for principal_id=%s", principal_id)
-            # TODO: raise custom service error instead
-            return None
+        except httpx.HTTPError as exc:
+            raise ExternalSourceRequestError(SOURCE_NAME, str(exc)) from exc
 
         if response.status_code == 404:
             return None
 
         if response.status_code != 200:
-            logger.error(
-                "Graph API returned %d for principal_id=%s: %s",
-                response.status_code, principal_id, response.text,
-            )
-            # TODO: raise custom service error instead
-            return None
+            raise ExternalSourceResponseError(SOURCE_NAME, response.status_code)
 
         data = response.json()
         return {

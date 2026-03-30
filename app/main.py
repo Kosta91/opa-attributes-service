@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
+from typing import Dict, Optional
 
-from app.api import public_router
+from app.api import public_router, register_exception_handlers
 from app.cache import RedisAttributeStore, LocalAttributeStore
 from app.external import EntraIDAttributeSource
 from app.redis import get_redis, get_redis_pool
@@ -22,11 +23,12 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+register_exception_handlers(app)
 app.include_router(public_router)
 
 
 @app.get("/health", tags=["health"])
-async def health(redis: Redis | None = Depends(get_redis)) -> dict[str, str]:
+async def health(redis: Optional[Redis] = Depends(get_redis)) -> Dict[str, str]:
     """Health-check endpoint."""
     if redis is not None:
         try:
@@ -37,7 +39,7 @@ async def health(redis: Redis | None = Depends(get_redis)) -> dict[str, str]:
 
 
 @app.get("/", tags=["root"])
-def root() -> dict[str, str]:
+def root() -> Dict[str, str]:
     """Root route with a short service identifier."""
     return {"service": "prodsec.opa_attribute_storage"}
 

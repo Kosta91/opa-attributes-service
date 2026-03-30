@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.db import DbSession, get_db
 from app.cache import InMemoryAttributeStore, get_store
@@ -24,7 +24,4 @@ async def get_attributes(
     external: ExternalAttributeSource = Depends(get_external_source),
 ) -> PrincipalAttributesResponse:
     """Return aggregated attributes for one principal (email or other id)."""
-    result = await get_principal_attributes(db, store, external, principal_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail="Principal not found")
-    return result
+    return await get_principal_attributes(db, store, external, principal_id)

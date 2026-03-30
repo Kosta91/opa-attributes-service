@@ -1,2 +1,2 @@
 from .attribute_sources import AttributeSourceOutput
-from .principal_attributes import PrincipalAttributeOutput
+from .principal_attributes import PrincipalAttributeOutput, PrincipalAttributesResponse

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.db.base import Base
@@ -10,7 +10,8 @@ from app.models.attribute_sources import AttributeSource
 
 class PrincipalAttribute(Base):
     __tablename__ = "principal_attributes"
-
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     principal_id: Mapped[String] = mapped_column(String(100), primary_key=True)
     attribute_key: Mapped[String] = mapped_column(String(100), primary_key=True)
     attribute_value: Mapped[String] = mapped_column(String(255), nullable=True)
