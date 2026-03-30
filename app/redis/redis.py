@@ -3,6 +3,9 @@ from typing import AsyncGenerator
 
 from app.redis.redis_settings import redis_settings
 
+_redis_pool: Redis | None = None
+
+
 def get_redis_pool() -> Redis:
     """Get or create Redis connection pool."""
     global _redis_pool
@@ -11,18 +14,9 @@ def get_redis_pool() -> Redis:
     return _redis_pool
 
 
-async def get_redis() -> AsyncGenerator[Redis, None]:
-    """
-    Dependency for Redis client in FastAPI endpoints.
-    
-    Usage in API routes:
-        @router.get("/example")
-        async def example(redis: Redis = Depends(get_redis)):
-            await redis.set("key", "value")
-    """
-    redis = get_redis_pool()
-    try:
-        yield redis
-    finally:
-        # Connection pool managed by Redis client, no need to close per request
-        pass
+async def get_redis() -> AsyncGenerator[Redis | None, None]:
+    """FastAPI dependency for Redis client. Yields None when Redis is disabled."""
+    if not redis_settings.REDIS_ENABLED:
+        yield None
+        return
+    yield get_redis_pool()

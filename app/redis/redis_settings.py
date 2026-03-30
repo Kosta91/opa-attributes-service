@@ -9,9 +9,17 @@ class RedisSettings(BaseSettings):
         extra="ignore",
     )
     
+    REDIS_ENABLED: bool = Field(
+        default=True,
+        description="Enable Redis as cache backend. When False, local in-memory cache is used.",
+    )
     REDIS_URL: str = Field(
         default="redis://localhost:6379/0",
         description="Redis connection URL (e.g., redis://localhost:6379/0)",
     )
-    
+    REDIS_CACHE_TTL: int = Field(
+        default=3600,
+        description="Default cache TTL in seconds.",
+    )
+
 redis_settings = RedisSettings()
