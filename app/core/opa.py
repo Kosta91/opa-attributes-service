@@ -1,3 +1,5 @@
+"""Attribute resolution pipeline: cache -> database -> external source."""
+
 from __future__ import annotations
 
 import logging

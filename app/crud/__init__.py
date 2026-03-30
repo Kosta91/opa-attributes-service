@@ -1,1 +1,3 @@
+"""CRUD operations for principal attributes."""
+
 from opa import get_principal_attributes_from_db, add_principal_attributes_to_db

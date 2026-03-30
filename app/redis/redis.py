@@ -1,3 +1,5 @@
+"""Redis connection pool and FastAPI dependency."""
+
 from redis.asyncio import Redis
 from typing import AsyncGenerator
 

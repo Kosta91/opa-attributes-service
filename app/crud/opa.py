@@ -1,3 +1,5 @@
+"""Database access layer for principal attributes."""
+
 from __future__ import annotations
 
 import logging

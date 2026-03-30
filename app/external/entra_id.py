@@ -1,3 +1,5 @@
+"""Azure Entra ID implementation of ExternalAttributeSource via Microsoft Graph API."""
+
 from __future__ import annotations
 
 import logging

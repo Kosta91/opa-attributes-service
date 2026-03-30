@@ -1,2 +1,4 @@
+"""SQLAlchemy ORM models."""
+
 from .attribute_sources import AttributeSource
 from .principal_attributes import PrincipalAttribute

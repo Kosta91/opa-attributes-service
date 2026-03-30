@@ -1,3 +1,5 @@
+"""Local in-process LRU cache implementation of InMemoryAttributeStore."""
+
 from __future__ import annotations
 
 

@@ -1,3 +1,5 @@
+"""Public API endpoints for OPA attribute lookups."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

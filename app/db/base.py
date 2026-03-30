@@ -1,3 +1,5 @@
+"""SQLAlchemy async engine, session factory, and declarative base."""
+
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker

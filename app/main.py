@@ -1,3 +1,5 @@
+"""OPA Attributes Service — FastAPI application entry point."""
+
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from typing import Dict, Optional
@@ -17,6 +19,7 @@ import uvicorn
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    """Initialize application-wide dependencies (cache store, external source)."""
     if redis_settings.REDIS_ENABLED:
         application.state.store = RedisAttributeStore(get_redis_pool())
     else:

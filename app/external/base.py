@@ -1,3 +1,5 @@
+"""Abstract interface for external attribute sources and FastAPI dependency."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

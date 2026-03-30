@@ -1,3 +1,5 @@
+"""Mapping of domain exceptions to HTTP responses."""
+
 from __future__ import annotations
 
 import logging

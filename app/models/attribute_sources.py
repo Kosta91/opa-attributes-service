@@ -1,3 +1,5 @@
+"""ORM model for attribute sources (providers of principal attributes)."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
