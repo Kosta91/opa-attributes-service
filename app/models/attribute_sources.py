@@ -13,6 +13,6 @@ class AttributeSource(Base):
     __tablename__ = "attribute_sources"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    source_name: Mapped[String] = mapped_column(String(255), nullable=False)
+    source_name: Mapped[String] = mapped_column(String(255), primary_key=True, index=True, nullable=False)
     last_sync: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     sync_status: Mapped[String] = mapped_column(String(50), nullable=True)

@@ -1,4 +1,4 @@
-"""Attribute resolution pipeline: cache -> database -> external source."""
+"""Attribute resolution pipeline: cache -> database -> external sources."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 async def get_principal_attributes(
     db: DbSession,
     cache: AbstractCache,
-    external: ExternalAttributeSource,
+    externals: list[ExternalAttributeSource],
     principal_id: str,
 ) -> PrincipalAttributesResponse:
     """Return aggregated attributes for one principal (email or other id)."""
@@ -49,17 +49,27 @@ async def get_principal_attributes(
             attributes=attrs_dict,
         )
 
-    # 3. External source
-    external_attrs = await external.fetch_attributes(principal_id)
-    if not external_attrs:
+    # 3. External sources — query each separately, persist per source
+    for source in externals:
+        try:
+            attrs = await source.fetch_attributes(principal_id)
+        except Exception:
+            logger.exception("External source %s failed for principal=%s", source.source_name, principal_id)
+            continue
+        if attrs:
+            await add_principal_attributes_to_db(db, principal_id, attrs, source_name=source.source_name)
+
+    # Re-read from DB to get the full picture across all sources
+    db_attrs = await get_principal_attributes_from_db(db, principal_id)
+    if not db_attrs:
         raise PrincipalNotFoundError(principal_id)
 
-    await add_principal_attributes_to_db(db, principal_id, external_attrs)
-    await __add_attrs_to_store(cache, cache_key, external_attrs)
+    attrs_dict = {a.attribute_key: a.attribute_value for a in db_attrs}
+    await __add_attrs_to_store(cache, cache_key, attrs_dict)
 
     return PrincipalAttributesResponse(
         principal_id=principal_id,
-        attributes=external_attrs,
+        attributes=attrs_dict,
     )
     
 

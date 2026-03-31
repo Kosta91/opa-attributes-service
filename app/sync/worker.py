@@ -6,7 +6,6 @@ import asyncio
 import logging
 
 from app.crud import (
-    get_all_sources,
     get_principal_ids_by_source,
     get_principal_attributes_by_source,
     upsert_principal_attributes,
@@ -25,10 +24,10 @@ class SyncWorker:
 
     def __init__(
         self,
-        external: ExternalAttributeSource,
+        externals: list[ExternalAttributeSource],
     ) -> None:
-        """Initialize the sync worker with an external attribute source."""
-        self._external = external
+        """Initialize the sync worker with a list of external attribute sources."""
+        self._externals = {src.source_name: src for src in externals}
         self._task: asyncio.Task | None = None
 
     def start(self) -> None:
@@ -38,9 +37,10 @@ class SyncWorker:
             return
         self._task = asyncio.create_task(self._run_loop())
         logger.info(
-            "Sync worker started (interval=%ds, batch_size=%d)",
+            "Sync worker started (interval=%ds, batch_size=%d, sources=%s)",
             sync_settings.SYNC_INTERVAL_SECONDS,
             sync_settings.SYNC_BATCH_SIZE,
+            list(self._externals.keys()),
         )
 
     async def stop(self) -> None:
@@ -64,9 +64,10 @@ class SyncWorker:
             loop.add_signal_handler(sig, stop_event.set)
 
         logger.info(
-            "Sync worker running in standalone mode (interval=%ds, batch_size=%d)",
+            "Sync worker running in standalone mode (interval=%ds, batch_size=%d, sources=%s)",
             sync_settings.SYNC_INTERVAL_SECONDS,
             sync_settings.SYNC_BATCH_SIZE,
+            list(self._externals.keys()),
         )
 
         while not stop_event.is_set():
@@ -83,7 +84,7 @@ class SyncWorker:
         logger.info("Sync worker stopped")
 
     async def _run_loop(self) -> None:
-        """Sleep → sync → repeat. Errors are logged but never stop the loop."""
+        """Sleep -> sync -> repeat. Errors are logged but never stop the loop."""
         while True:
             await asyncio.sleep(sync_settings.SYNC_INTERVAL_SECONDS)
             try:
@@ -91,56 +92,52 @@ class SyncWorker:
             except Exception:
                 logger.exception("Sync cycle failed unexpectedly")
 
-
     async def _sync_all_sources(self) -> None:
-        """Iterate over all registered sources and sync each one."""
-        async with AsyncSessionLocal() as db:
-            sources = await get_all_sources(db)
-
-        for source in sources:
+        """Iterate over registered external sources and sync each one."""
+        for source_name, external in self._externals.items():
             try:
-                await self._sync_source(source.id)
+                await self._sync_source(source_name, external)
             except Exception:
-                logger.exception("Failed to sync source=%s", source.id)
+                logger.exception("Failed to sync source=%s", source_name)
                 async with AsyncSessionLocal() as db:
-                    await update_source_sync_status(db, source.id, "error")
+                    await update_source_sync_status(db, source_name, "error")
 
-
-    async def _sync_source(self, source_id: str) -> None:
+    async def _sync_source(self, source_name: str, external: ExternalAttributeSource) -> None:
         """Re-fetch attributes for every principal linked to the given source."""
-        logger.info("Starting sync for source=%s", source_id)
+        logger.info("Starting sync for source=%s", source_name)
 
         async with AsyncSessionLocal() as db:
-            await update_source_sync_status(db, source_id, "syncing")
-            principal_ids = await get_principal_ids_by_source(db, source_id)
+            await update_source_sync_status(db, source_name, "syncing")
+            principal_ids = await get_principal_ids_by_source(db, source_name)
 
         synced = 0
         for i in range(0, len(principal_ids), sync_settings.SYNC_BATCH_SIZE):
             batch = principal_ids[i : i + sync_settings.SYNC_BATCH_SIZE]
             for pid in batch:
                 try:
-                    await self._sync_principal(pid, source_id)
+                    await self._sync_principal(pid, source_name, external)
                     synced += 1
                 except Exception:
-                    logger.exception("Failed to sync principal=%s from source=%s", pid, source_id)
+                    logger.exception("Failed to sync principal=%s from source=%s", pid, source_name)
 
         async with AsyncSessionLocal() as db:
-            await update_source_sync_status(db, source_id, "ok")
-        logger.info("Sync complete for source=%s: %d/%d principals synced", source_id, synced, len(principal_ids))
+            await update_source_sync_status(db, source_name, "ok")
+        logger.info("Sync complete for source=%s: %d/%d principals synced", source_name, synced, len(principal_ids))
 
-
-    async def _sync_principal(self, principal_id: str, source_id: str) -> None:
+    async def _sync_principal(
+        self, principal_id: str, source_name: str, external: ExternalAttributeSource,
+    ) -> None:
         """Fetch fresh attributes for one principal and update the DB if changed."""
-        fresh_attrs = await self._external.fetch_attributes(principal_id)
+        fresh_attrs = await external.fetch_attributes(principal_id)
 
         async with AsyncSessionLocal() as db:
             if fresh_attrs is None:
-                await delete_principal_attributes_by_source(db, principal_id, source_id)
+                await delete_principal_attributes_by_source(db, principal_id, source_name)
                 return
 
-            existing = await get_principal_attributes_by_source(db, principal_id, source_id)
+            existing = await get_principal_attributes_by_source(db, principal_id, source_name)
 
             if existing == fresh_attrs:
                 return
 
-            await upsert_principal_attributes(db, principal_id, source_id, fresh_attrs)
+            await upsert_principal_attributes(db, principal_id, source_name, fresh_attrs)

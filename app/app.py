@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.api import public_router, register_exception_handlers
 from app.cache import RedisCache, LocalInMemoryCache
 from app.db import DbSession, get_db
-from app.external import EntraIDAttributeSource
+from app.external import create_external_sources
 from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
 from app.redis.redis_settings import redis_settings
@@ -22,8 +22,7 @@ async def lifespan(application: FastAPI):
         application.state.cache = RedisCache(get_redis_pool())
     else:
         application.state.cache = LocalInMemoryCache()
-    # TODO: implement support for multiple external sources
-    application.state.external_source = EntraIDAttributeSource()
+    application.state.external_sources = await create_external_sources()
 
     yield
 

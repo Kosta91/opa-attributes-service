@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from app.db import DbSession, get_db
 from app.cache import AbstractCache, get_cache
-from app.external import ExternalAttributeSource, get_external_source
+from app.external import ExternalAttributeSource, get_external_sources
 from app.core import get_principal_attributes
 from app.schemas import PrincipalAttributesResponse
 
@@ -23,7 +23,7 @@ async def get_attributes(
     principal_id: str,
     db: DbSession = Depends(get_db),
     store: AbstractCache = Depends(get_cache),
-    external: ExternalAttributeSource = Depends(get_external_source),
+    externals: list[ExternalAttributeSource] = Depends(get_external_sources),
 ) -> PrincipalAttributesResponse:
     """Return aggregated attributes for one principal (email or other id)."""
-    return await get_principal_attributes(db, store, external, principal_id)
+    return await get_principal_attributes(db, store, externals, principal_id)

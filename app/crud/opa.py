@@ -28,7 +28,7 @@ async def get_principal_attributes_from_db(db: DbSession, principal_id: str) -> 
 
 
 async def add_principal_attributes_to_db(
-    db: DbSession, principal_id: str, attributes: dict[str, str], source_id: str = "entra_id",
+    db: DbSession, principal_id: str, attributes: dict[str, str], source_name: str = "entra_id",
 ) -> list[PrincipalAttribute]:
     """Create new attribute records from an external source. Returns created records."""
     now = datetime.now(timezone.utc)
@@ -37,7 +37,7 @@ async def add_principal_attributes_to_db(
             principal_id=principal_id,
             attribute_key=key,
             attribute_value=value,
-            source_id=source_id,
+            source_name=source_name,
             last_updated_at=now,
         )
         for key, value in attributes.items()

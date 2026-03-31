@@ -34,3 +34,20 @@ class EntraIDSettings(BaseSettings):
 
 
 entra_id_settings = EntraIDSettings()
+
+
+class ExternalSourcesSettings(BaseSettings):
+    """Configuration for the list of active external attribute sources."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+    )
+
+    EXTERNAL_SOURCES: list[str] = Field(
+        default=["entra_id"],
+        description="List of external source names to activate (comma-separated in env).",
+    )
+
+
+external_sources_settings = ExternalSourcesSettings()

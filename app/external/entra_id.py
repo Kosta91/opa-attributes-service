@@ -20,6 +20,11 @@ SOURCE_NAME = "entra_id"
 class EntraIDAttributeSource(ExternalAttributeSource):
     """Fetches user attributes from Azure Entra ID via Microsoft Graph API."""
 
+    @property
+    def source_name(self) -> str:
+        """Unique identifier for this source."""
+        return SOURCE_NAME
+
     def __init__(self) -> None:
         self._msal_app = msal.ConfidentialClientApplication(
             client_id=entra_id_settings.ENTRA_CLIENT_ID,

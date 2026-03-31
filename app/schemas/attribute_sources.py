@@ -13,7 +13,6 @@ class AttributeSourceOutput(BaseModel):
         extra="ignore",
     )
 
-    source_id: str = Field(..., description="Unique identifier for the attribute source")
-    source_name: str = Field(..., description="Human-readable name of the attribute source")
+    source_name: str = Field(..., description="Unique name of the attribute source")
     last_sync: Optional[datetime] = Field(None, description="Timestamp of the last synchronization")
     sync_status: Optional[str] = Field(None, description="Current synchronization status")

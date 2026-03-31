@@ -17,7 +17,7 @@ import sys
 
 import uvicorn
 
-from app.external import EntraIDAttributeSource
+from app.external import create_external_sources
 from app.sync import SyncWorker
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ def _run_serve() -> None:
 
 async def _run_sync() -> None:
     """Initialize dependencies and run the sync worker loop."""
-    external = EntraIDAttributeSource()
-    worker = SyncWorker(external=external)
+    externals = await create_external_sources()
+    worker = SyncWorker(externals=externals)
     await worker.run()
 
 

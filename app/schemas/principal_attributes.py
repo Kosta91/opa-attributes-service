@@ -16,7 +16,7 @@ class PrincipalAttributeOutput(BaseModel):
     principal_id: str = Field(..., description="Unique identifier for the principal")
     attribute_key: str = Field(..., description="Key of the principal attribute")
     attribute_value: Optional[str] = Field(None, description="Value of the principal attribute")
-    source_id: Optional[str] = Field(None, description="Identifier of the source that provided this attribute")
+    source_name: Optional[str] = Field(None, description="Name of the source that provided this attribute")
     last_updated: Optional[datetime] = Field(None, description="Timestamp of when this attribute was last updated")
 
 
