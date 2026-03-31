@@ -15,11 +15,14 @@ from app.models import PrincipalAttribute
 logger = logging.getLogger(__name__)
 
 
-async def get_principal_attributes_from_db(db: DbSession, principal_id: str) -> list[PrincipalAttribute]:
+async def get_principal_attributes_from_db(
+    db: DbSession, 
+    principal_id: str
+) -> list[PrincipalAttribute]:
     """Return attributes for one principal from the database."""
     try:
         result = await db.execute(
-            select(PrincipalAttribute).where(PrincipalAttribute.id == principal_id)
+            select(PrincipalAttribute).where(PrincipalAttribute.principal_id == principal_id)
         )
         return list(result.scalars().all())
     except SQLAlchemyError as exc:
@@ -28,7 +31,10 @@ async def get_principal_attributes_from_db(db: DbSession, principal_id: str) -> 
 
 
 async def add_principal_attributes_to_db(
-    db: DbSession, principal_id: str, attributes: dict[str, str], source_name: str = "entra_id",
+    db: DbSession, 
+    principal_id: str, 
+    attributes: dict[str, str], 
+    source_name: str,
 ) -> list[PrincipalAttribute]:
     """Create new attribute records from an external source. Returns created records."""
     now = datetime.now(timezone.utc)

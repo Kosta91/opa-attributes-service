@@ -44,6 +44,10 @@ class ExternalSourcesSettings(BaseSettings):
         extra="ignore",
     )
 
+    MOCK_ENABLED: bool = Field(
+        default=False,
+        description="Use mock external sources instead of real ones.",
+    )
     EXTERNAL_SOURCES: list[str] = Field(
         default=["entra_id"],
         description="List of external source names to activate (comma-separated in env).",
