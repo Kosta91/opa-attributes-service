@@ -40,7 +40,7 @@ def _run_serve() -> None:
     """Start the FastAPI HTTP server."""
     from app.app import app  # noqa: delayed import to avoid circular deps
 
-    uvicorn.run(app)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 async def _run_sync() -> None:

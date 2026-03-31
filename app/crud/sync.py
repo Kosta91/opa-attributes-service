@@ -121,7 +121,7 @@ async def update_source_sync_status(
     """Update sync_status and last_sync timestamp for an attribute source."""
     await db.execute(
         update(AttributeSource)
-        .where(AttributeSource.id == source_name)
+        .where(AttributeSource.source_name == source_name)
         .values(sync_status=status, last_sync=datetime.now(timezone.utc))
     )
     await db.commit()

@@ -19,4 +19,4 @@ class PrincipalAttribute(Base):
     source_name: Mapped[String] = mapped_column(String(100), ForeignKey("attribute_sources.source_name"), nullable=False)
     last_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
-    source = Mapped[AttributeSource] = relationship("AttributeSource", back_populates="attributes")
+    source: Mapped[AttributeSource] = relationship("AttributeSource")

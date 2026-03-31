@@ -11,7 +11,7 @@ from app.core import get_principal_attributes
 from app.schemas import PrincipalAttributesResponse
 
 
-router = APIRouter(prefix="/", tags=["OPA"])
+router = APIRouter(prefix="", tags=["OPA"])
 
 
 @router.get(
