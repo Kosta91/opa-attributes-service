@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
+from app.api.auth import require_auth
 from app.db import DbSession, get_db
 from app.cache import AbstractCache, get_cache
 from app.external import ExternalAttributeSource, get_external_sources
@@ -11,7 +12,11 @@ from app.core import get_principal_attributes
 from app.schemas import PrincipalAttributesResponse
 
 
-router = APIRouter(prefix="", tags=["OPA"])
+router = APIRouter(
+    prefix="",
+    tags=["OPA"],
+    dependencies=[Depends(require_auth)],
+)
 
 
 @router.get(
