@@ -7,17 +7,17 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-from app.cache.base import InMemoryAttributeStore
+from app.cache.base import AbstractCache
 from app.redis.redis_settings import redis_settings
 
 
-class RedisAttributeStore(InMemoryAttributeStore):
+class RedisCache(AbstractCache):
     """Cache backed by Redis."""
 
     def __init__(self, redis: Redis) -> None:
         self._redis = redis
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> Any:
         raw = await self._redis.get(key)
         if raw is None:
             return None

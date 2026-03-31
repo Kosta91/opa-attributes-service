@@ -19,7 +19,7 @@ async def get_principal_attributes_from_db(db: DbSession, principal_id: str) -> 
     """Return attributes for one principal from the database."""
     try:
         result = await db.execute(
-            select(PrincipalAttribute).where(PrincipalAttribute.principal_id == principal_id)
+            select(PrincipalAttribute).where(PrincipalAttribute.id == principal_id)
         )
         return list(result.scalars().all())
     except SQLAlchemyError as exc:

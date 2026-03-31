@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from app.cache.base import InMemoryAttributeStore
+from app.cache.base import AbstractCache
 from app.crud import (
     get_all_sources,
     get_principal_ids_by_source,
@@ -16,7 +16,7 @@ from app.crud import (
 )
 from app.db.base import AsyncSessionLocal
 from app.external.base import ExternalAttributeSource
-from app.redis.keys import principal_attrs_key
+from app.cache.keys import principal_attrs_key
 from app.sync.settings import sync_settings
 
 logger = logging.getLogger("sync.worker")
@@ -27,12 +27,13 @@ class SyncWorker:
 
     def __init__(
         self,
-        store: InMemoryAttributeStore,
+        store: AbstractCache,
         external: ExternalAttributeSource,
     ) -> None:
         self._store = store
         self._external = external
         self._task: asyncio.Task | None = None
+
 
     def start(self) -> None:
         """Start the periodic sync loop as a background asyncio task."""
@@ -45,6 +46,7 @@ class SyncWorker:
             sync_settings.SYNC_INTERVAL_SECONDS,
             sync_settings.SYNC_BATCH_SIZE,
         )
+
 
     async def stop(self) -> None:
         """Cancel the background task and wait for it to finish."""
@@ -65,6 +67,7 @@ class SyncWorker:
             except Exception:
                 logger.exception("Sync cycle failed unexpectedly")
 
+
     async def _sync_all_sources(self) -> None:
         """Iterate over all registered sources and sync each one."""
         async with AsyncSessionLocal() as db:
@@ -72,11 +75,12 @@ class SyncWorker:
 
         for source in sources:
             try:
-                await self._sync_source(source.source_id)
+                await self._sync_source(source.id)
             except Exception:
-                logger.exception("Failed to sync source=%s", source.source_id)
+                logger.exception("Failed to sync source=%s", source.id)
                 async with AsyncSessionLocal() as db:
-                    await update_source_sync_status(db, source.source_id, "error")
+                    await update_source_sync_status(db, source.id, "error")
+
 
     async def _sync_source(self, source_id: str) -> None:
         """Re-fetch attributes for every principal linked to the given source."""
@@ -100,6 +104,7 @@ class SyncWorker:
             await update_source_sync_status(db, source_id, "ok")
         logger.info("Sync complete for source=%s: %d/%d principals synced", source_id, synced, len(principal_ids))
 
+
     async def _sync_principal(self, principal_id: str, source_id: str) -> None:
         """Fetch fresh attributes for one principal, update DB and invalidate cache if changed."""
         fresh_attrs = await self._external.fetch_attributes(principal_id)
@@ -118,6 +123,7 @@ class SyncWorker:
             await upsert_principal_attributes(db, principal_id, source_id, fresh_attrs)
 
         await self._invalidate_cache(principal_id)
+
 
     async def _invalidate_cache(self, principal_id: str) -> None:
         """Delete cached attributes for a principal. Logs but does not raise on failure."""

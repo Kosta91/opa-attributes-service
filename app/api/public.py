@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.db import DbSession, get_db
-from app.cache import InMemoryAttributeStore, get_store
+from app.cache import AbstractCache, get_cache
 from app.external import ExternalAttributeSource, get_external_source
 from app.core import get_principal_attributes
 from app.schemas import PrincipalAttributesResponse
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/", tags=["OPA"])
 async def get_attributes(
     principal_id: str,
     db: DbSession = Depends(get_db),
-    store: InMemoryAttributeStore = Depends(get_store),
+    store: AbstractCache = Depends(get_cache),
     external: ExternalAttributeSource = Depends(get_external_source),
 ) -> PrincipalAttributesResponse:
     """Return aggregated attributes for one principal (email or other id)."""

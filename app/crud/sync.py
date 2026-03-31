@@ -22,7 +22,7 @@ async def get_all_sources(db: DbSession) -> list[AttributeSource]:
 async def get_principal_ids_by_source(db: DbSession, source_id: str) -> list[str]:
     """Return distinct principal IDs that have attributes from the given source."""
     result = await db.execute(
-        select(PrincipalAttribute.principal_id)
+        select(PrincipalAttribute.id)
         .where(PrincipalAttribute.source_id == source_id)
         .distinct()
     )
@@ -35,7 +35,7 @@ async def get_principal_attributes_by_source(
     """Return existing attributes for a principal from a specific source as a dict."""
     result = await db.execute(
         select(PrincipalAttribute).where(
-            PrincipalAttribute.principal_id == principal_id,
+            PrincipalAttribute.id == principal_id,
             PrincipalAttribute.source_id == source_id,
         )
     )
@@ -53,7 +53,7 @@ async def upsert_principal_attributes(
 
     await db.execute(
         delete(PrincipalAttribute).where(
-            PrincipalAttribute.principal_id == principal_id,
+            PrincipalAttribute.id == principal_id,
             PrincipalAttribute.source_id == source_id,
         )
     )
@@ -78,7 +78,7 @@ async def delete_principal_attributes_by_source(
     """Delete all attributes for a principal from a given source."""
     await db.execute(
         delete(PrincipalAttribute).where(
-            PrincipalAttribute.principal_id == principal_id,
+            PrincipalAttribute.id == principal_id,
             PrincipalAttribute.source_id == source_id,
         )
     )
@@ -91,7 +91,7 @@ async def update_source_sync_status(
     """Update sync_status and last_sync timestamp for an attribute source."""
     await db.execute(
         update(AttributeSource)
-        .where(AttributeSource.source_id == source_id)
+        .where(AttributeSource.id == source_id)
         .values(sync_status=status, last_sync=datetime.now(timezone.utc))
     )
     await db.commit()

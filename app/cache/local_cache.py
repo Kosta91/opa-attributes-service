@@ -6,16 +6,16 @@ from __future__ import annotations
 from cachetools import LRUCache
 from typing import Any
 
-from app.cache.base import InMemoryAttributeStore
+from app.cache.base import AbstractCache
 
 
-class LocalAttributeStore(InMemoryAttributeStore):
+class LocalInMemoryCache(AbstractCache):
     """Cache backed by an in-process LRU cache."""
 
     def __init__(self, maxsize: int = 1024) -> None:
         self._data: LRUCache = LRUCache(maxsize=maxsize)
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> Any:
         return self._data.get(key)
 
     async def set(self, key: str, value: Any) -> None:

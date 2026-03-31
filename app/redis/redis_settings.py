@@ -12,7 +12,7 @@ class RedisSettings(BaseSettings):
     )
     
     REDIS_ENABLED: bool = Field(
-        default=True,
+        default=False,
         description="Enable Redis as cache backend. When False, local in-memory cache is used.",
     )
     REDIS_URL: str = Field(

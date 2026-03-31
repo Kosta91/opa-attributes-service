@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import Request
 
 
-class InMemoryAttributeStore(ABC):
+class AbstractCache(ABC):
     """Abstract cache interface for attribute storage."""
 
     @abstractmethod
@@ -24,6 +24,6 @@ class InMemoryAttributeStore(ABC):
         """Remove a value by key."""
 
 
-def get_store(request: Request) -> InMemoryAttributeStore:
+def get_cache(request: Request) -> AbstractCache:
     """FastAPI dependency — returns the store created during lifespan."""
-    return request.app.state.store
+    return request.app.state.cache

@@ -14,10 +14,9 @@ class PrincipalAttribute(Base):
     __tablename__ = "principal_attributes"
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    principal_id: Mapped[String] = mapped_column(String(100), primary_key=True)
     attribute_key: Mapped[String] = mapped_column(String(100), primary_key=True)
     attribute_value: Mapped[String] = mapped_column(String(255), nullable=True)
-    source_id: Mapped[String] = mapped_column(String(100), ForeignKey("attribute_sources.source_id"))
+    source_id: Mapped[Integer] = mapped_column(String(100), ForeignKey("attribute_sources.id"))
     last_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     source = Mapped[AttributeSource] = relationship("AttributeSource", back_populates="attributes")
