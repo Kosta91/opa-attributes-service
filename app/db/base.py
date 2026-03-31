@@ -34,6 +34,12 @@ AsyncSessionLocal: async_sessionmaker[DbSession] = async_sessionmaker(
     expire_on_commit=False,
 )
         
+async def create_tables() -> None:
+    """Create all tables if they don't exist yet."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 async def get_db() -> AsyncIterator[DbSession]:
     """Yield a database session.
 

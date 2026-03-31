@@ -8,8 +8,9 @@ from sqlalchemy import text
 
 from app.api import public_router, register_exception_handlers
 from app.cache import RedisCache, LocalInMemoryCache
-from app.db import DbSession, get_db
+from app.db import DbSession, get_db, create_tables
 from app.external import create_external_sources
+import app.models  # noqa: ensure models are registered in Base.metadata
 from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
 from app.redis.redis_settings import redis_settings
@@ -17,7 +18,8 @@ from app.redis.redis_settings import redis_settings
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Initialize application-wide dependencies (cache store, external source)."""
+    """Initialize application-wide dependencies (DB tables, cache store, external sources)."""
+    await create_tables()
     if redis_settings.REDIS_ENABLED:
         application.state.cache = RedisCache(get_redis_pool())
     else:
