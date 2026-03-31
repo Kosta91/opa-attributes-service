@@ -1,11 +1,10 @@
-"""Background worker that periodically syncs principal attributes from external sources."""
+"""Standalone worker that periodically syncs principal attributes from external sources into the DB."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 
-from app.cache.base import AbstractCache
 from app.crud import (
     get_all_sources,
     get_principal_ids_by_source,
@@ -16,24 +15,21 @@ from app.crud import (
 )
 from app.db.base import AsyncSessionLocal
 from app.external.base import ExternalAttributeSource
-from app.cache.keys import principal_attrs_key
 from app.sync.settings import sync_settings
 
 logger = logging.getLogger("sync.worker")
 
 
 class SyncWorker:
-    """Periodically re-fetches attributes from external sources and updates the DB + cache."""
+    """Periodically re-fetches attributes from external sources and updates the DB."""
 
     def __init__(
         self,
-        store: AbstractCache,
         external: ExternalAttributeSource,
     ) -> None:
-        self._store = store
+        """Initialize the sync worker with an external attribute source."""
         self._external = external
         self._task: asyncio.Task | None = None
-
 
     def start(self) -> None:
         """Start the periodic sync loop as a background asyncio task."""
@@ -47,7 +43,6 @@ class SyncWorker:
             sync_settings.SYNC_BATCH_SIZE,
         )
 
-
     async def stop(self) -> None:
         """Cancel the background task and wait for it to finish."""
         if self._task is not None:
@@ -57,6 +52,35 @@ class SyncWorker:
             except asyncio.CancelledError:
                 pass
             logger.info("Sync worker stopped")
+
+    async def run(self) -> None:
+        """Run the sync loop as a standalone process (blocking). Handles graceful shutdown on SIGINT/SIGTERM."""
+        import signal
+
+        loop = asyncio.get_running_loop()
+        stop_event = asyncio.Event()
+
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, stop_event.set)
+
+        logger.info(
+            "Sync worker running in standalone mode (interval=%ds, batch_size=%d)",
+            sync_settings.SYNC_INTERVAL_SECONDS,
+            sync_settings.SYNC_BATCH_SIZE,
+        )
+
+        while not stop_event.is_set():
+            try:
+                await self._sync_all_sources()
+            except Exception:
+                logger.exception("Sync cycle failed unexpectedly")
+
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=sync_settings.SYNC_INTERVAL_SECONDS)
+            except asyncio.TimeoutError:
+                pass
+
+        logger.info("Sync worker stopped")
 
     async def _run_loop(self) -> None:
         """Sleep → sync → repeat. Errors are logged but never stop the loop."""
@@ -106,13 +130,12 @@ class SyncWorker:
 
 
     async def _sync_principal(self, principal_id: str, source_id: str) -> None:
-        """Fetch fresh attributes for one principal, update DB and invalidate cache if changed."""
+        """Fetch fresh attributes for one principal and update the DB if changed."""
         fresh_attrs = await self._external.fetch_attributes(principal_id)
 
         async with AsyncSessionLocal() as db:
             if fresh_attrs is None:
                 await delete_principal_attributes_by_source(db, principal_id, source_id)
-                await self._invalidate_cache(principal_id)
                 return
 
             existing = await get_principal_attributes_by_source(db, principal_id, source_id)
@@ -121,14 +144,3 @@ class SyncWorker:
                 return
 
             await upsert_principal_attributes(db, principal_id, source_id, fresh_attrs)
-
-        await self._invalidate_cache(principal_id)
-
-
-    async def _invalidate_cache(self, principal_id: str) -> None:
-        """Delete cached attributes for a principal. Logs but does not raise on failure."""
-        cache_key = principal_attrs_key(principal_id)
-        try:
-            await self._store.delete(cache_key)
-        except Exception:
-            logger.exception("Cache invalidation failed for principal=%s", principal_id)

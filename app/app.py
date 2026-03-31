@@ -13,7 +13,6 @@ from app.external import EntraIDAttributeSource
 from app.redis import get_redis, get_redis_pool
 from app.redis.redis import Redis
 from app.redis.redis_settings import redis_settings
-from app.sync import SyncWorker
 
 
 @asynccontextmanager
@@ -26,15 +25,7 @@ async def lifespan(application: FastAPI):
     # TODO: implement support for multiple external sources
     application.state.external_source = EntraIDAttributeSource()
 
-    sync_worker = SyncWorker(
-        cache=application.state.cache,
-        external=application.state.external_source,
-    )
-    sync_worker.start()
-
     yield
-
-    await sync_worker.stop()
 
 
 app = FastAPI(lifespan=lifespan)
